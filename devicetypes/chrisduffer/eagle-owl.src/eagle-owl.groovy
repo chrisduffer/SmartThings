@@ -30,7 +30,16 @@ metadata {
 
 	tiles {
 		valueTile("power", "device.power", width: 2, height: 2) {
-			state "default", label:'${currentValue} W'
+			state "default", label:'${currentValue}', unit:"kW",
+            backgroundColors:[
+            [value: 0, color: "#153591"],
+            [value: 200, color: "#1e9cbb"],
+            [value: 400, color: "#90d2a7"],
+            [value: 600, color: "#44b621"],
+            [value: 800, color: "#f1d801"],
+            [value: 1000, color: "#d04e00"],
+            [value: 1200, color: "#bc2323"]
+        ]
 		}
         
         valueTile("lastdata", "device.lastdata", width: 2, height: 2) {
