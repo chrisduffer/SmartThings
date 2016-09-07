@@ -25,12 +25,14 @@ metadata {
     
     preferences {
     	input("ip", "string", title:"IP Address", description: "192.168.1.126", required: true, displayDuringSetup: true)
+        input("liveDataUrl", "string", title:"eagle-owl Live Data Url", description: "/eagle-owl/live_data.php", required: true, displayDuringSetup: true)
 	}
     
 	tiles {
 		valueTile("power", "device.power", width: 2, height: 2) {
 			state "default", label:'${currentValue} W', unit:"W",
             backgroundColors:[
+            // These probably need to work
             [value: 0, color: "#44b621"],
             [value: 100, color: "#44b621"],
             [value: 800, color: "#f1d801"],
@@ -39,15 +41,15 @@ metadata {
         	]
 		}
         
-        valueTile("lastdata", "device.lastdata", width: 2, height: 2) {
-			state "default", label:'${currentValue}'
+        valueTile("lastdata", "device.lastdata",) {
+			state "default", label:'Last Update: ${currentValue}'
 		}
         
         standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-
-		main (["power", "lastdata", "refresh"])
+        
+		main (["power",])
 		details(["power", "lastdata", "refresh"])
 	}
 }
@@ -55,18 +57,14 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
-	// TODO: handle 'power' attribute
-    
-    
+	
     def descMap = parseDescriptionAsMap(description)
     def body
-    log.debug "descMap: ${descMap}"
-    
+    //log.debug "descMap: ${descMap}"
     
     if (descMap["body"]) body = new String(descMap["body"].decodeBase64())
-    
+    log.debug "body: ${body}"
     def parts = body.split(' ')
-	log.debug "body '${parts}'"
     sendEvent(name: "power", value: parts[3])
     sendEvent(name: "lastdata", value: "${parts[0]} ${parts[1]}")
 }
@@ -79,11 +77,10 @@ def poll() {
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	// TODO: handle 'refresh' command
     
     def cmds = []
-    cmds << getAction("/eagle-owl/live_data.php")
-    log.debug "cmds ${cmds}"
+    cmds << getAction(liveDataUrl)
+    log.debug "refresh cmds: ${cmds}"
     return cmds
 }
 
@@ -97,18 +94,12 @@ def updated() {
     configure()
 }
 
-
-
-
 def configure() {
-	log.debug "configure() ip ${ip}"
-	log.debug "Configuring Device For SmartThings Use"
-    sendEvent(name:"hubInfo", value:"Sonoff switch still being configured", displayed:false) 
+	log.debug "configure() ip: ${ip} liveDataUrl: ${liveDataUrl}"
     if (ip != null && ip != "") state.dni = setDeviceNetworkId(ip, "80")
-    state.hubIP = device.hub.getDataValue("localIP")
-    state.hubPort = device.hub.getDataValue("localSrvPortTCP")
+    if (ip == null || ip == "") log.error "ip not configured"
+    if (liveDataUrl == null || liveDataUrl == "") log.error "liveDataUrl not configured"
 }
-
 
 private setDeviceNetworkId(ip, port = null){
     def myDNI
@@ -129,8 +120,6 @@ private updateDNI() {
     }
 }
 
-
-
 private getAction(uri){ 
   updateDNI()
  
@@ -144,15 +133,12 @@ private getAction(uri){
   return hubAction    
 }
 
-
-
 private getHeader(){
     def headers = [:]
     headers.put("Host", getHostAddress())
     headers.put("Content-Type", "application/x-www-form-urlencoded")
     return headers
 }
-
 
 private getHostAddress() {
     if (ip != null && ip != ""){
