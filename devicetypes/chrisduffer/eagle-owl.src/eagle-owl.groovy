@@ -57,7 +57,6 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
-	
     def descMap = parseDescriptionAsMap(description)
     def body
     //log.debug "descMap: ${descMap}"
